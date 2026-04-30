@@ -37,7 +37,8 @@ class InvestigationEngine:
             return "credential_access"
         else:
             return "unknown"
-
+       elif "enumeration" in alert_lower or "service" in alert_lower:
+            return "network_recon"
     def investigate(self, alert_name, hours=4):
         """
         Main investigation loop.
