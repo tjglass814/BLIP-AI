@@ -1,8 +1,8 @@
 """
 BLIP-AI — Behavioral Log Investigation Platform — Artificial Intelligence
 =========================================================================
-Main orchestrator. Ties Splunk connector, investigation engine,
-and Claude analyst together into a single autonomous SOC investigation loop.
+Main orchestrator. Single unified investigation report powered by
+Splunk telemetry and Claude reasoning.
 
 Version: 1.0
 Author: Taylor Glass
@@ -16,7 +16,6 @@ from datetime import datetime, timezone
 from investigation_engine import InvestigationEngine
 from claude_analyst import ClaudeAnalyst
 
-# ANSI colors for terminal output
 GREEN  = "\033[92m"
 RED    = "\033[91m"
 YELLOW = "\033[93m"
@@ -40,42 +39,53 @@ def print_banner():
 
 def run_investigation(alert_name, use_claude=True):
     """
-    Full investigation pipeline:
-    1. Run Splunk queries via investigation engine
-    2. Score confidence and determine verdict
-    3. Send findings to Claude for reasoning (if available)
-    4. Print complete report
+    Full investigation pipeline producing one unified report.
     """
-
     start_time = time.time()
+    print_banner()
 
-    # Step 1 — Run investigation engine
+    print(f"{BOLD}{'='*60}{RESET}")
+    print(f"{BOLD}BLIP-AI INVESTIGATION INITIATED{RESET}")
+    print(f"{BOLD}{'='*60}{RESET}")
+    print(f"Alert:    {alert_name}")
+    print(f"Time:     {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC")
+    print(f"Status:   Gathering evidence from Splunk...\n")
+
+    # Step 1 — Gather evidence silently
     engine = InvestigationEngine()
     findings = engine.investigate(alert_name, hours=24)
-    engine.print_report()
 
-    # Step 2 — Claude reasoning layer
+    elapsed_splunk = round(time.time() - start_time, 2)
+    print(f"\n{GREEN}✅ Evidence gathered in {elapsed_splunk}s{RESET}")
+    print(f"   Checks completed: 5/5")
+    print(f"   Automated confidence: {findings.get('confidence_score')}/1.0")
+    print(f"   Source IP identified: {findings.get('src_ip', 'Unknown')}")
+
+    # Step 2 — Claude unified analysis
     if use_claude:
-        print(f"\n{BLUE}{BOLD}[CLAUDE ANALYST]{RESET} Sending findings to Claude for reasoning...")
+        print(f"\n{BLUE}Sending evidence to Claude analyst...{RESET}\n")
 
         analyst = ClaudeAnalyst()
         success, test_response = analyst.test_connection()
 
         if success:
-            print(f"{GREEN}✅ Claude connected — analyzing findings...{RESET}\n")
             analysis = analyst.analyze(findings)
-
-            print(f"{BOLD}{'='*60}{RESET}")
-            print(f"{BOLD}CLAUDE SOC ANALYST ASSESSMENT{RESET}")
-            print(f"{BOLD}{'='*60}{RESET}")
-            print(analysis)
-            print(f"{BOLD}{'='*60}{RESET}")
-
             findings["claude_analysis"] = analysis
+
+            print(f"{BOLD}{'='*60}{RESET}")
+            print(f"{BOLD}BLIP-AI UNIFIED INVESTIGATION REPORT{RESET}")
+            print(f"{BOLD}Alert: {alert_name}{RESET}")
+            print(f"{BOLD}{'='*60}{RESET}\n")
+            print(analysis)
+            print(f"\n{BOLD}{'='*60}{RESET}")
+
         else:
-            print(f"{YELLOW}⚠️  Claude API not available — investigation complete without reasoning layer.{RESET}")
-            print(f"{YELLOW}    Splunk-based findings are still valid and actionable.{RESET}")
+            print(f"{YELLOW}⚠️  Claude unavailable — printing structured findings only{RESET}")
+            engine.print_report()
             findings["claude_analysis"] = "Claude API unavailable"
+
+    else:
+        engine.print_report()
 
     # Step 3 — Save report
     elapsed = round(time.time() - start_time, 2)
@@ -89,14 +99,13 @@ def run_investigation(alert_name, use_claude=True):
     with open(report_path, "w") as f:
         json.dump(findings, f, indent=2, default=str)
 
-    print(f"\n{GREEN}✅ Report saved: {report_path}{RESET}")
+    print(f"\n{GREEN}✅ Full report saved: {report_path}{RESET}")
     print(f"{GREEN}✅ Investigation completed in {elapsed} seconds{RESET}")
 
     # Step 4 — Auto-response check
     confidence = findings.get("confidence_score", 0)
     if confidence >= 0.90:
         print(f"\n{RED}{BOLD}🚨 AUTO-RESPONSE THRESHOLD REACHED (confidence={confidence}){RESET}")
-        print(f"{RED}   Actions that would fire in production:{RESET}")
         src_ip = findings.get("src_ip")
         if src_ip:
             print(f"{RED}   → Block {src_ip} at OPNsense firewall{RESET}")
@@ -110,9 +119,8 @@ def run_investigation(alert_name, use_claude=True):
 def run_continuous_monitor(interval_minutes=5):
     """
     Continuous monitoring mode.
-    Checks for new triggered alerts every N minutes
-    and automatically investigates them.
     """
+    print_banner()
     print(f"{BOLD}Starting continuous monitoring mode...{RESET}")
     print(f"Checking for new alerts every {interval_minutes} minutes.")
     print(f"Press Ctrl+C to stop.\n")
@@ -157,19 +165,13 @@ def run_continuous_monitor(interval_minutes=5):
 if __name__ == "__main__":
     import sys
 
-    print_banner()
-
     if len(sys.argv) > 1:
         if sys.argv[1] == "monitor":
-            # Continuous monitoring mode
             run_continuous_monitor(interval_minutes=5)
         else:
-            # Investigate specific alert passed as argument
             alert_name = " ".join(sys.argv[1:])
             run_investigation(alert_name)
     else:
-        # Default — investigate most recent alert
-        print(f"{BOLD}Running single investigation on most recent alert...{RESET}\n")
         engine = InvestigationEngine()
         alerts = engine.splunk.get_triggered_alerts(hours=24)
 

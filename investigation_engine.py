@@ -27,6 +27,8 @@ class InvestigationEngine:
             return "brute_force"
         elif "port scan" in alert_lower or "reconnaissance" in alert_lower:
             return "network_recon"
+        elif "enumeration" in alert_lower or "service" in alert_lower:
+            return "network_recon"
         elif "privilege escalation" in alert_lower or "euid" in alert_lower:
             return "privilege_escalation"
         elif "persistence" in alert_lower or "cron" in alert_lower \
@@ -37,8 +39,7 @@ class InvestigationEngine:
             return "credential_access"
         else:
             return "unknown"
-       elif "enumeration" in alert_lower or "service" in alert_lower:
-            return "network_recon"
+
     def investigate(self, alert_name, hours=4):
         """
         Main investigation loop.
@@ -53,7 +54,6 @@ class InvestigationEngine:
         self.alert_type = self.detect_alert_type(alert_name)
         print(f"\nPlaybook selected: {self.alert_type}")
 
-        # Always run all checks — build complete picture
         evidence = {
             "alert_name": alert_name,
             "alert_type": self.alert_type,
@@ -152,7 +152,6 @@ class InvestigationEngine:
         evidence["confidence_score"] = round(self.confidence, 2)
         evidence["src_ip"] = self.src_ip
 
-        # Determine verdict
         evidence["verdict"] = self.determine_verdict()
         evidence["kill_chain"] = self.build_kill_chain(evidence["checks"])
         evidence["recommended_actions"] = self.get_recommendations(evidence)
@@ -247,8 +246,6 @@ class InvestigationEngine:
 
 if __name__ == "__main__":
     engine = InvestigationEngine()
-
-    # Test with the most recent alert from your lab
     test_alert = "Privilege Escalation Confirmed (euid=0 Non-Root User)"
     evidence = engine.investigate(test_alert, hours=24)
     engine.print_report()
