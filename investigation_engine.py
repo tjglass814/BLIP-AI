@@ -40,19 +40,22 @@ class InvestigationEngine:
         else:
             return "unknown"
 
-    def investigate(self, alert_name, hours=4):
+    def investigate(self, alert_name, hours=4, verbose=False):
         """
         Main investigation loop.
         Run all relevant queries and build findings.
         """
-        print(f"\n{'='*60}")
-        print(f"BLIP-AI Investigation Starting")
-        print(f"Alert: {alert_name}")
-        print(f"Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC")
-        print(f"{'='*60}")
+        if verbose:
+            print(f"\n{'='*60}")
+            print(f"BLIP-AI Investigation Starting")
+            print(f"Alert: {alert_name}")
+            print(f"Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC")
+            print(f"{'='*60}")
 
         self.alert_type = self.detect_alert_type(alert_name)
-        print(f"\nPlaybook selected: {self.alert_type}")
+
+        if verbose:
+            print(f"\nPlaybook selected: {self.alert_type}")
 
         evidence = {
             "alert_name": alert_name,
@@ -62,7 +65,8 @@ class InvestigationEngine:
         }
 
         # Step 1 — Check for prior reconnaissance
-        print("\n[1/5] Checking for prior reconnaissance...")
+        if verbose:
+            print("\n[1/5] Checking for prior reconnaissance...")
         recon = self.splunk.check_recon_campaign(hours=hours)
         if recon:
             evidence["checks"]["reconnaissance"] = {
@@ -71,13 +75,16 @@ class InvestigationEngine:
                 "confidence_contribution": 0.20
             }
             self.confidence += 0.20
-            print(f"      ✅ Recon detected — {recon[0].get('campaign_summary')}")
+            if verbose:
+                print(f"      ✅ Recon detected — {recon[0].get('campaign_summary')}")
         else:
             evidence["checks"]["reconnaissance"] = {"detected": False}
-            print(f"      ➖ No reconnaissance detected")
+            if verbose:
+                print(f"      ➖ No reconnaissance detected")
 
         # Step 2 — Check for brute force
-        print("\n[2/5] Checking for brute force activity...")
+        if verbose:
+            print("\n[2/5] Checking for brute force activity...")
         brute = self.splunk.check_ssh_brute_force(hours=hours)
         if brute:
             top = brute[0]
@@ -89,13 +96,16 @@ class InvestigationEngine:
             }
             self.confidence += 0.25
             self.src_ip = top.get("src_ip")
-            print(f"      ✅ Brute force — {top.get('count')} attempts from {top.get('src_ip')}")
+            if verbose:
+                print(f"      ✅ Brute force — {top.get('count')} attempts from {top.get('src_ip')}")
         else:
             evidence["checks"]["brute_force"] = {"detected": False}
-            print(f"      ➖ No brute force detected")
+            if verbose:
+                print(f"      ➖ No brute force detected")
 
         # Step 3 — Check for privilege escalation
-        print("\n[3/5] Checking for privilege escalation...")
+        if verbose:
+            print("\n[3/5] Checking for privilege escalation...")
         escalation = self.splunk.check_privilege_escalation(hours=hours)
         if escalation:
             top = escalation[0]
@@ -106,13 +116,16 @@ class InvestigationEngine:
                 "confidence_contribution": 0.35
             }
             self.confidence += 0.35
-            print(f"      ✅ Escalation confirmed — AUID: {top.get('auid')}")
+            if verbose:
+                print(f"      ✅ Escalation confirmed — AUID: {top.get('auid')}")
         else:
             evidence["checks"]["privilege_escalation"] = {"detected": False}
-            print(f"      ➖ No escalation detected")
+            if verbose:
+                print(f"      ➖ No escalation detected")
 
         # Step 4 — Check for persistence
-        print("\n[4/5] Checking for persistence mechanisms...")
+        if verbose:
+            print("\n[4/5] Checking for persistence mechanisms...")
         persistence = self.splunk.check_persistence(hours=hours)
         if persistence:
             top = persistence[0]
@@ -123,13 +136,16 @@ class InvestigationEngine:
                 "confidence_contribution": 0.25
             }
             self.confidence += 0.25
-            print(f"      ✅ Persistence detected — {top.get('mechanisms')}")
+            if verbose:
+                print(f"      ✅ Persistence detected — {top.get('mechanisms')}")
         else:
             evidence["checks"]["persistence"] = {"detected": False}
-            print(f"      ➖ No persistence detected")
+            if verbose:
+                print(f"      ➖ No persistence detected")
 
         # Step 5 — Check for port scan
-        print("\n[5/5] Checking for sensitive service enumeration...")
+        if verbose:
+            print("\n[5/5] Checking for sensitive service enumeration...")
         scan = self.splunk.check_port_scan(hours=hours)
         if scan:
             top = scan[0]
@@ -142,10 +158,12 @@ class InvestigationEngine:
             self.confidence += 0.15
             if not self.src_ip:
                 self.src_ip = top.get("src_ip")
-            print(f"      ✅ Port scan — {top.get('unique_ports')} unique ports from {top.get('src_ip')}")
+            if verbose:
+                print(f"      ✅ Port scan — {top.get('unique_ports')} unique ports from {top.get('src_ip')}")
         else:
             evidence["checks"]["port_scan"] = {"detected": False}
-            print(f"      ➖ No port scan detected")
+            if verbose:
+                print(f"      ➖ No port scan detected")
 
         # Cap confidence at 1.0
         self.confidence = min(self.confidence, 1.0)
@@ -247,5 +265,5 @@ class InvestigationEngine:
 if __name__ == "__main__":
     engine = InvestigationEngine()
     test_alert = "Privilege Escalation Confirmed (euid=0 Non-Root User)"
-    evidence = engine.investigate(test_alert, hours=24)
+    evidence = engine.investigate(test_alert, hours=24, verbose=True)
     engine.print_report()
