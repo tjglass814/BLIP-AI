@@ -1,4 +1,4 @@
 anthropic
 requests
+urllib3
 python-dotenv
-splunk-sdk

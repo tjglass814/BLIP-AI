@@ -3,3 +3,6 @@ reports/
 logs/
 __pycache__/
 *.pyc
+.pytest_cache/
+blip_core_logs/
+.venv/
