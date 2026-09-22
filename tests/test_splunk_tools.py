@@ -53,6 +53,23 @@ def test_splunk_search_blocks_oversized_range(fake_connector):
     assert not fake_connector.run_query_calls
 
 
+def test_splunk_search_blocks_embedded_earliest_bypassing_the_24h_cap(fake_connector):
+    """
+    Even though the earliest tool parameter itself is within the cap, an
+    earliest= modifier embedded directly in the SPL text would otherwise
+    let the query pull a much wider range than check_max_range permits.
+    """
+    with pytest.raises(GuardrailViolation):
+        splunk_tools._splunk_search("search index=main earliest=-90d", earliest="-1h")
+    assert not fake_connector.run_query_calls
+
+
+def test_splunk_search_blocks_unrecognized_spl_command(fake_connector):
+    with pytest.raises(GuardrailViolation):
+        splunk_tools._splunk_search("search index=main | somebrandnewcommand", earliest="-1h")
+    assert not fake_connector.run_query_calls
+
+
 def test_pivot_on_entity_src_ip(fake_connector):
     result = splunk_tools._pivot_on_entity("10.10.10.132", "src_ip")
     assert result["entity"] == "10.10.10.132"

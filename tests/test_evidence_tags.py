@@ -1,6 +1,10 @@
 import pytest
 
-from blip_core.deterministic.evidence_tags import EVIDENCE_TAGS, confidence_weight_for
+from blip_core.deterministic.evidence_tags import (
+    EVIDENCE_TAGS,
+    check_allowed_source,
+    confidence_weight_for,
+)
 from blip_core.deterministic.mitre import TAG_TECHNIQUE_MAP
 
 
@@ -30,3 +34,28 @@ def test_unknown_tag_raises():
 def test_every_tag_declares_at_least_one_allowed_source():
     for tag, spec in EVIDENCE_TAGS.items():
         assert len(spec["allowed_sources"]) >= 1, f"{tag} has no allowed sources"
+
+
+def test_check_allowed_source_accepts_a_valid_pairing():
+    check_allowed_source("ssh_brute_force", "auditd_host")
+
+
+def test_check_allowed_source_rejects_a_mismatched_pairing():
+    """
+    ssh_brute_force is only ever observed via auditd_host — tagging it as
+    opnsense_network instead would manufacture apparent source diversity
+    and inflate compute_confidence()'s corroboration multiplier.
+    """
+    with pytest.raises(ValueError):
+        check_allowed_source("ssh_brute_force", "opnsense_network")
+
+
+def test_check_allowed_source_rejects_unknown_tag():
+    with pytest.raises(KeyError):
+        check_allowed_source("not_a_real_tag", "auditd_host")
+
+
+@pytest.mark.parametrize("tag,spec", list(EVIDENCE_TAGS.items()))
+def test_check_allowed_source_accepts_every_declared_allowed_source(tag, spec):
+    for source in spec["allowed_sources"]:
+        check_allowed_source(tag, source)

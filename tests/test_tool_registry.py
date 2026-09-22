@@ -50,6 +50,53 @@ def test_call_unknown_tool_raises_keyerror(registry):
         registry.call("does_not_exist", seq=1)
 
 
+def test_call_unknown_tool_is_still_logged(registry, tmp_path):
+    with pytest.raises(KeyError):
+        registry.call("does_not_exist", seq=1, llm_rationale="probing", value="x")
+
+    log_files = list(tmp_path.glob("*.jsonl"))
+    assert len(log_files) == 1
+    log_text = log_files[0].read_text()
+    assert "does_not_exist" in log_text
+    assert "unknown tool" in log_text
+
+
+def test_audit_log_write_failure_does_not_mask_a_successful_call(registry, monkeypatch):
+    registry.register(make_echo_tool())
+
+    def boom(**kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(registry.audit_log, "record", boom)
+
+    result = registry.call("echo", seq=1, llm_rationale="test", message="hello")
+    assert result == {"echoed": "hello"}
+
+
+def test_audit_log_write_failure_does_not_mask_the_real_handler_exception(registry, monkeypatch):
+    def boom(message):
+        raise RuntimeError("kaboom")
+
+    tool = make_echo_tool()
+    broken_tool = Tool(
+        name="broken",
+        description="always fails",
+        input_schema=tool.input_schema,
+        output_schema=tool.output_schema,
+        risk_level="read_only",
+        handler=boom,
+    )
+    registry.register(broken_tool)
+
+    def logging_boom(**kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(registry.audit_log, "record", logging_boom)
+
+    with pytest.raises(RuntimeError, match="kaboom"):
+        registry.call("broken", seq=1, message="x")
+
+
 def test_duplicate_registration_rejected(registry):
     registry.register(make_echo_tool())
     with pytest.raises(ValueError):

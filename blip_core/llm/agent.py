@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Protocol
 import anthropic
 from dotenv import load_dotenv
 
-from blip_core.deterministic.evidence_tags import EVIDENCE_TAGS
+from blip_core.deterministic.evidence_tags import EVIDENCE_TAGS, check_allowed_source
 from blip_core.llm.prompts import SYSTEM_PROMPT
 from blip_core.tools.base import Tool
 from blip_core.tools.registry import ToolRegistry
@@ -40,8 +40,16 @@ class AgentProtocolError(Exception):
     """Raised when the LLM client returns something the agent loop can't act on."""
 
 
-def _identity(**kwargs) -> Dict[str, Any]:
-    return kwargs
+def _handle_conclude(evidence: List[Dict[str, Any]], reasoning_narrative: str) -> Dict[str, Any]:
+    """
+    Validate each evidence item's tag/source pairing against
+    evidence_tags.py's allowed list before accepting the conclusion —
+    schema validation alone only checks that source and tag are each
+    individually known, not that they're a legitimate pairing.
+    """
+    for item in evidence:
+        check_allowed_source(item["tag"], item["source"])
+    return {"evidence": evidence, "reasoning_narrative": reasoning_narrative}
 
 
 CONCLUDE_TOOL = Tool(
@@ -90,7 +98,7 @@ CONCLUDE_TOOL = Tool(
         },
     },
     risk_level="read_only",
-    handler=_identity,
+    handler=_handle_conclude,
 )
 
 
@@ -243,6 +251,7 @@ class AnthropicLLMClient:
             max_tokens=4096,
             system=SYSTEM_PROMPT,
             tools=self.anthropic_tools,
+            tool_choice={"type": "any"},
             messages=messages,
         )
         return self._parse_response(response)

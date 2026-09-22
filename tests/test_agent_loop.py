@@ -1,7 +1,15 @@
+import types
+
 import pytest
 
 from blip_core.audit.log import AuditLog
-from blip_core.llm.agent import CONCLUDE_TOOL, CONCLUDE_TOOL_NAME, InvestigationAgent, ToolCallStep
+from blip_core.llm.agent import (
+    CONCLUDE_TOOL,
+    CONCLUDE_TOOL_NAME,
+    AnthropicLLMClient,
+    InvestigationAgent,
+    ToolCallStep,
+)
 from blip_core.tools.base import Tool
 from blip_core.tools.registry import ToolRegistry
 
@@ -178,6 +186,32 @@ def test_conclude_with_stray_confidence_field_is_rejected_and_loop_continues(reg
     assert result.raw_evidence == []  # the smuggled attempt failed; only the clean conclude succeeded
 
 
+def test_conclude_with_mismatched_source_and_tag_is_rejected_and_loop_continues(registry):
+    """
+    ssh_brute_force is only allowed from auditd_host — attributing it to
+    opnsense_network instead must be rejected rather than accepted,
+    since it would falsely inflate confidence's corroboration bonus.
+    """
+    mismatched = ToolCallStep(
+        tool_name=CONCLUDE_TOOL_NAME,
+        tool_input={
+            "evidence": [{"source": "opnsense_network", "tag": "ssh_brute_force", "detail": {}}],
+            "reasoning_narrative": "x",
+        },
+        rationale="mismatched tag/source pairing",
+    )
+    client = ScriptedLLMClient([mismatched, conclude_step()])
+    agent = InvestigationAgent(registry=registry, llm_client=client, max_iterations=5)
+
+    result = agent.run("Test Alert")
+
+    assert result.status == "CONCLUDED"
+    assert len(result.transcript) == 2
+    assert "error" in result.transcript[0].output_summary
+    assert "ssh_brute_force" in result.transcript[0].output_summary["error"]
+    assert result.raw_evidence == []  # the mismatched attempt failed; only the clean conclude succeeded
+
+
 def test_guardrail_violation_is_caught_recorded_and_loop_continues(monkeypatch, tmp_path):
     """
     A real GuardrailViolation, raised inside the real splunk_search tool, must
@@ -211,8 +245,37 @@ def test_guardrail_violation_is_caught_recorded_and_loop_continues(monkeypatch, 
     rejected_call = result.transcript[0]
     assert rejected_call.tool_name == "splunk_search"
     assert "error" in rejected_call.output_summary
-    assert "disallowed command" in rejected_call.output_summary["error"]
+    assert "not on the allowed" in rejected_call.output_summary["error"]
     # tool metadata still resolves correctly even though the call itself failed
     assert rejected_call.risk_level == "read_only"
 
     assert result.transcript[1].tool_name == CONCLUDE_TOOL_NAME
+
+
+def test_anthropic_client_forces_a_tool_call_every_turn(monkeypatch):
+    """
+    tool_choice must require the model to call one of the given tools
+    every turn, rather than allowing a plain-text turn that produces no
+    tool_use block at all.
+    """
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    client = AnthropicLLMClient(tools=[CONCLUDE_TOOL])
+
+    captured = {}
+
+    def fake_create(**kwargs):
+        captured.update(kwargs)
+        block = types.SimpleNamespace(
+            type="tool_use",
+            id="call_1",
+            name=CONCLUDE_TOOL_NAME,
+            input={"evidence": [], "reasoning_narrative": "done"},
+        )
+        return types.SimpleNamespace(content=[block])
+
+    monkeypatch.setattr(client.client.messages, "create", fake_create)
+
+    step = client.next_step(alert_name="Test Alert", transcript=[], iteration=1, max_iterations=3)
+
+    assert captured["tool_choice"] == {"type": "any"}
+    assert step.tool_name == CONCLUDE_TOOL_NAME

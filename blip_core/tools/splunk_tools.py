@@ -13,7 +13,11 @@ from typing import Any, Dict
 from splunk_connector import SplunkConnector
 
 from blip_core.tools.base import Tool
-from blip_core.tools.guardrails import check_max_range, check_read_only_spl
+from blip_core.tools.guardrails import (
+    check_max_range,
+    check_no_embedded_time_modifiers,
+    check_read_only_spl,
+)
 
 _connector = None
 
@@ -27,6 +31,7 @@ def _get_connector() -> SplunkConnector:
 
 def _splunk_search(spl: str, earliest: str = "-1h", latest: str = "now") -> Dict[str, Any]:
     check_read_only_spl(spl)
+    check_no_embedded_time_modifiers(spl)
     check_max_range(earliest, latest)
     results = _get_connector().run_query(spl, earliest=earliest, latest=latest)
     return {"results": results, "count": len(results)}

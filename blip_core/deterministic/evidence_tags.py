@@ -47,3 +47,25 @@ def confidence_weight_for(tag: str) -> float:
     if tag not in EVIDENCE_TAGS:
         raise KeyError(f"No confidence weight defined for evidence tag '{tag}'")
     return EVIDENCE_TAGS[tag]["weight"]
+
+
+def check_allowed_source(tag: str, source: str) -> None:
+    """
+    Raise ValueError if `source` is not an allowed evidence source for `tag`.
+
+    compute_confidence() rewards evidence that corroborates across
+    multiple distinct sources with a superlinear multiplier. Without this
+    check, tagging evidence with a source outside its tag's allowed list
+    (e.g. attributing ssh_brute_force — genuinely only ever observed via
+    auditd_host — to opnsense_network instead) would let the LLM
+    manufacture apparent source diversity and inflate that multiplier
+    without any real corroboration having occurred.
+    """
+    if tag not in EVIDENCE_TAGS:
+        raise KeyError(f"No evidence tag definition for '{tag}'")
+    allowed = EVIDENCE_TAGS[tag]["allowed_sources"]
+    if source not in allowed:
+        raise ValueError(
+            f"Evidence tag '{tag}' cannot be attributed to source '{source}' — "
+            f"allowed sources for this tag are {allowed}"
+        )
