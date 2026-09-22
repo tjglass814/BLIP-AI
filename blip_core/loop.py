@@ -71,6 +71,10 @@ def investigate(
     agent = InvestigationAgent(registry=registry, llm_client=llm_client, max_iterations=max_iterations)
     result = agent.run(alert_name)
 
+    # KNOWN ISSUE (see blip_core/KNOWN_ISSUES.md): on MAX_ITERATIONS_REACHED,
+    # result.raw_evidence is always [] regardless of what earlier tool calls
+    # found, so this verdict scores 0.0 / INFORMATIONAL — indistinguishable
+    # from a clean alert. Not fixed here.
     evidence_items = _build_evidence_items(result.raw_evidence)
     confidence_score, confidence_breakdown = compute_confidence(evidence_items)
     mitre_techniques = map_evidence_to_techniques(evidence_items)

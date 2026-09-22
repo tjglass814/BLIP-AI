@@ -153,3 +153,66 @@ def test_conclude_tool_input_schema_rejects_unknown_source_and_tag():
     }
     errors = validate(bad, CONCLUDE_TOOL.input_schema)
     assert errors  # schema enum rejects unknown source/tag
+
+
+def test_conclude_with_stray_confidence_field_is_rejected_and_loop_continues(registry):
+    smuggled_confidence = ToolCallStep(
+        tool_name=CONCLUDE_TOOL_NAME,
+        tool_input={
+            "evidence": [
+                {"source": "auditd_host", "tag": "ssh_brute_force", "detail": {}, "confidence": 0.95}
+            ],
+            "reasoning_narrative": "x",
+        },
+        rationale="trying to sneak a confidence score past the evidence contract",
+    )
+    client = ScriptedLLMClient([smuggled_confidence, conclude_step()])
+    agent = InvestigationAgent(registry=registry, llm_client=client, max_iterations=5)
+
+    result = agent.run("Test Alert")
+
+    assert result.status == "CONCLUDED"
+    assert len(result.transcript) == 2
+    assert "error" in result.transcript[0].output_summary
+    assert "confidence" in result.transcript[0].output_summary["error"]
+    assert result.raw_evidence == []  # the smuggled attempt failed; only the clean conclude succeeded
+
+
+def test_guardrail_violation_is_caught_recorded_and_loop_continues(monkeypatch, tmp_path):
+    """
+    A real GuardrailViolation, raised inside the real splunk_search tool, must
+    be caught by the agent loop rather than crashing the investigation.
+    """
+    from blip_core.tools import splunk_tools
+
+    def unreachable_connector():
+        raise AssertionError("guardrail should have rejected the query before reaching Splunk")
+
+    monkeypatch.setattr(splunk_tools, "_get_connector", unreachable_connector)
+
+    guardrail_registry = ToolRegistry(audit_log=AuditLog(log_dir=str(tmp_path)))
+    guardrail_registry.register(splunk_tools.SPLUNK_SEARCH)
+    guardrail_registry.register(CONCLUDE_TOOL)
+
+    destructive_step = ToolCallStep(
+        tool_name="splunk_search",
+        tool_input={"spl": "search index=main | delete", "earliest": "-1h"},
+        rationale="attempting a destructive query",
+    )
+    client = ScriptedLLMClient([destructive_step, conclude_step()])
+    agent = InvestigationAgent(registry=guardrail_registry, llm_client=client, max_iterations=5)
+
+    result = agent.run("Test Alert")
+
+    assert result.status == "CONCLUDED"
+    assert result.iterations_used == 2
+    assert len(result.transcript) == 2
+
+    rejected_call = result.transcript[0]
+    assert rejected_call.tool_name == "splunk_search"
+    assert "error" in rejected_call.output_summary
+    assert "disallowed command" in rejected_call.output_summary["error"]
+    # tool metadata still resolves correctly even though the call itself failed
+    assert rejected_call.risk_level == "read_only"
+
+    assert result.transcript[1].tool_name == CONCLUDE_TOOL_NAME

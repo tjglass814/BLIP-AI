@@ -64,12 +64,22 @@ CONCLUDE_TOOL = Tool(
                     "properties": {
                         "source": {"type": "string", "enum": list(EVIDENCE_SOURCES)},
                         "tag": {"type": "string", "enum": list(EVIDENCE_TAGS.keys())},
+                        # Freeform on purpose — raw supporting facts (an IP, a count,
+                        # a process name) have no fixed shape. additionalProperties
+                        # is deliberately left permissive here, unlike the object
+                        # itself, so a legitimate detail blob is never rejected.
                         "detail": {"type": "object"},
                     },
+                    # Defense-in-depth: rejects a stray field (e.g. a confidence
+                    # number) tacked onto an evidence item instead of just
+                    # ignoring it downstream. See loop.py::_build_evidence_items,
+                    # which never reads anything but source/tag/detail anyway.
+                    "additionalProperties": False,
                 },
             },
             "reasoning_narrative": {"type": "string"},
         },
+        "additionalProperties": False,
     },
     output_schema={
         "type": "object",
@@ -187,6 +197,13 @@ class InvestigationAgent:
                     narrative=output["reasoning_narrative"],
                 )
 
+        # KNOWN ISSUE (see blip_core/KNOWN_ISSUES.md): raw_evidence is empty here
+        # even if earlier tool calls in `transcript` turned up real findings — the
+        # agent only has evidence once the LLM explicitly tags it via a successful
+        # conclude_investigation call. loop.py scores this as confidence 0.0 /
+        # INFORMATIONAL, indistinguishable from an investigation that found
+        # nothing. Deliberately not fixed here — needs a design decision on how
+        # to trust untagged tool output before building a partial verdict.
         return AgentResult(
             status="MAX_ITERATIONS_REACHED",
             iterations_used=self.max_iterations,

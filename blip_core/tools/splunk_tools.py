@@ -80,6 +80,7 @@ SPLUNK_SEARCH = Tool(
             "earliest": {"type": "string"},
             "latest": {"type": "string"},
         },
+        "additionalProperties": False,
     },
     output_schema={
         "type": "object",
@@ -106,6 +107,7 @@ PIVOT_ON_ENTITY = Tool(
             "value": {"type": "string"},
             "type": {"type": "string", "enum": ["src_ip", "auid"]},
         },
+        "additionalProperties": False,
     },
     output_schema={
         "type": "object",
