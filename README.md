@@ -3,8 +3,8 @@
 **Behavioral Log Investigation Platform — Artificial Intelligence**
 
 > Not a SIEM. Not an LLM chatbot. Not just SOAR.
-> A **governed security investigation and response platform** that builds
-> evidence-backed understanding from heterogeneous security telemetry.
+> A **governed security investigation and response platform** that turns
+> security telemetry into Autonomous Decisions.
 
 ---
 
@@ -44,10 +44,10 @@ Confidence / Risk  ────────────────────�
 Policy Engine  →  Approval Gate  →  Action  →  Verification  →  Audit
 ```
 
-The distinction that matters: BLIP-AI does not merely say *"something happened."*
+The distinction that matters: BLIP-AI doesn't just say *"something happened."*
 It answers **what happened, who is involved, is it actually malicious, what came
 before and after, has this entity been suspicious before, what does the evidence
-show, and what should be done** — and, increasingly, it can safely do it.
+show, and what should be done**
 
 ## Architecture at a Glance
 
