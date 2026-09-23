@@ -15,7 +15,7 @@ signals across domains into coherent attack stories; investigates them on its ow
 remembers the entities and incidents it has seen; enriches evidence with external
 intelligence; makes confidence-based, policy-governed decisions; takes controlled
 defensive action; verifies the result; and can **explain and prove every conclusion
-it reaches.** The homelab is the proving ground. The GitHub repo is the portfolio.
+it reaches.**
 
 ## Not This — This
 
