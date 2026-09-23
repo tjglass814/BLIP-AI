@@ -138,13 +138,3 @@ Not *"this log matched a rule,"* but:
 > data, contacted a suspicious destination, and attempted exfiltration. Four
 > independent telemetry sources corroborate the attack. Confidence is 0.97. The
 > destination has been blocked, the incident documented, and containment verified."*
-
-## The Portfolio Statement
-
-When mature, BLIP-AI demonstrates detection engineering, security architecture,
-platform engineering, adversary knowledge, and operational maturity — built from the
-ground up. The interview answer is not *"I used a SIEM to detect attacks."* It is:
-
-> *"I built the investigation engine, the correlation and confidence models, the
-> governance and policy layer, and the autonomous response platform from the ground
-> up — and I can explain and defend every architectural decision I made."*
