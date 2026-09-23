@@ -106,19 +106,27 @@ The full roadmap — all five axes and the phased plan — is in
 ```
 BLIP-AI/
 ├── README.md                     ← you are here
+├── blip_ai.py                    ← V1.1 legacy engine
+├── investigation_engine.py       ← V1.1 legacy engine
+├── splunk_connector.py           ← V1.1 legacy engine
+├── claude_analyst.py             ← V1.1 legacy engine
 ├── blip_core/                    ← the governed platform core (P0, complete)
+│   ├── __init__.py
+│   ├── config.py                 ← MAX_ITERATIONS, MAX_QUERY_HOURS, etc.
+│   ├── loop.py                   ← investigate(alert_name) -> Verdict, top-level orchestrator
+│   ├── KNOWN_ISSUES.md
 │   ├── tools/                    ← typed tool gateway + guardrails + registry
 │   ├── deterministic/            ← confidence, MITRE, evidence tags, policy
 │   ├── llm/                      ← the agentic investigation loop
 │   ├── verdict/                  ← the structured verdict schema
 │   └── audit/                    ← append-only audit log
+├── playbooks/                    ← V1.1 detection playbooks (Domains 1-2) that blip_core builds on
 ├── docs/
 │   ├── VISION.md                 ← the long-term end-state vision
 │   ├── BUILD-PLAN.md             ← the five-axis phased roadmap
 │   └── architecture/             ← per-phase design write-ups
 │       └── 01-governed-core.md
-├── tests/                        ← unit tests + (growing) scenario harness
-└── KNOWN_ISSUES.md
+└── tests/                        ← unit tests + (growing) scenario harness
 ```
 
 ## Design Principles
