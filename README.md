@@ -91,14 +91,14 @@ show, and what should be done**
 
 | Component | State |
 |---|---|
-| **P0 — Governed Core** | ✅ Complete — see [docs/architecture/01-governed-core.md](docs/architecture/01-governed-core.md) |
-| P1 — Live Investigation | ⏳ Next |
-| P2 — Correlation | 📋 Planned |
-| P3 — Entity Memory (MVP) | 📋 Planned |
-| P4 — Web SOC UI | 📋 Planned |
-| P5 — Governed Autonomous Response | 📋 Planned |
+| **P0 — Governed Core** | Complete — see [docs/architecture/01-governed-core.md](docs/architecture/01-governed-core.md) |
+| P1 — Live Investigation | Next |
+| P2 — Correlation | Planned |
+| P3 — Entity Memory (Minimum Viable Product) | Planned |
+| P4 — Web SOC UI | Planned |
+| P5 — Governed Autonomous Response | Planned |
 
-The full roadmap — all five axes and the phased plan — is in
+The full roadmap
 **[docs/BUILD-PLAN.md](docs/BUILD-PLAN.md)**.
 
 ## Repository Layout
@@ -107,7 +107,7 @@ The full roadmap — all five axes and the phased plan — is in
 BLIP-AI/
 ├── README.md                      ← you are here
 │
-├── blip_core/                     ← THE PLATFORM — governed agent core (P0, complete)
+├── blip_core/                     ← THE PLATFORM — governed agent core
 │   ├── tools/                     ← typed tool gateway + guardrails + registry
 │   ├── deterministic/             ← confidence, MITRE, evidence tags, policy
 │   ├── llm/                       ← the agentic investigation loop
@@ -125,7 +125,7 @@ BLIP-AI/
 │       ├── README.md              ← architecture index (7-layer target)
 │       └── 01-governed-core.md    ← P0 write-up
 │
-├── tests/                         ← unit tests + (growing) scenario harness
+├── tests/                         ← unit tests + scenario harness
 │
 ├── playbooks/                     ← V1.1 LEGACY — detection playbooks (Domains 1–2)
 │                                     the proven logic blip_core builds on
