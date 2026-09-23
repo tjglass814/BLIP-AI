@@ -124,6 +124,7 @@ BLIP-AI/
 ├── docs/
 │   ├── VISION.md                 ← the long-term end-state vision
 │   ├── BUILD-PLAN.md             ← the five-axis phased roadmap
+│   ├── V1.1-ENGINE-STATUS.md     ← V1.1 status snapshot (superseded by BUILD-PLAN.md)
 │   └── architecture/             ← per-phase design write-ups
 │       └── 01-governed-core.md
 └── tests/                        ← unit tests + (growing) scenario harness
