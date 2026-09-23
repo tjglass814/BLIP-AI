@@ -3,8 +3,8 @@
 **Behavioral Log Investigation Platform — Artificial Intelligence**
 
 > Not a SIEM. Not an LLM chatbot. Not just SOAR.
-> A **governed security investigation and response platform** that builds
-> evidence-backed understanding from heterogeneous security telemetry.
+> A **governed security investigation and response platform** that turns
+> security telemetry into Autonomous Decisions.
 
 ---
 
