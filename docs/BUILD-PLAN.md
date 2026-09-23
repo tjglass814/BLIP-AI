@@ -50,12 +50,12 @@ The execution roadmap. Each phase is a working, demoable step.
 
 ```
               ┌─────────────────┐
-              │  P0 Governed    │  ✅ complete
+              │  P0 Governed    │  complete
               │     Core        │
               └────────┬────────┘
                        ▼
               ┌─────────────────┐
-              │ P1 Live         │  ⏳ next
+              │ P1 Live         │  next
               │ Investigation   │
               └────────┬────────┘
                        ▼
