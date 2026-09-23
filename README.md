@@ -105,29 +105,39 @@ The full roadmap — all five axes and the phased plan — is in
 
 ```
 BLIP-AI/
-├── README.md                     ← you are here
-├── blip_ai.py                    ← V1.1 legacy engine
-├── investigation_engine.py       ← V1.1 legacy engine
-├── splunk_connector.py           ← V1.1 legacy engine
-├── claude_analyst.py             ← V1.1 legacy engine
-├── blip_core/                    ← the governed platform core (P0, complete)
-│   ├── __init__.py
-│   ├── config.py                 ← MAX_ITERATIONS, MAX_QUERY_HOURS, etc.
-│   ├── loop.py                   ← investigate(alert_name) -> Verdict, top-level orchestrator
-│   ├── KNOWN_ISSUES.md
-│   ├── tools/                    ← typed tool gateway + guardrails + registry
-│   ├── deterministic/            ← confidence, MITRE, evidence tags, policy
-│   ├── llm/                      ← the agentic investigation loop
-│   ├── verdict/                  ← the structured verdict schema
-│   └── audit/                    ← append-only audit log
-├── playbooks/                    ← V1.1 detection playbooks (Domains 1-2) that blip_core builds on
-├── docs/
-│   ├── VISION.md                 ← the long-term end-state vision
-│   ├── BUILD-PLAN.md             ← the five-axis phased roadmap
-│   ├── V1.1-ENGINE-STATUS.md     ← V1.1 status snapshot (superseded by BUILD-PLAN.md)
-│   └── architecture/             ← per-phase design write-ups
-│       └── 01-governed-core.md
-└── tests/                        ← unit tests + (growing) scenario harness
+├── README.md                      ← you are here
+│
+├── blip_core/                     ← THE PLATFORM — governed agent core (P0, complete)
+│   ├── tools/                     ← typed tool gateway + guardrails + registry
+│   ├── deterministic/             ← confidence, MITRE, evidence tags, policy
+│   ├── llm/                       ← the agentic investigation loop
+│   ├── verdict/                   ← the structured verdict schema
+│   ├── audit/                     ← append-only audit log
+│   ├── config.py                  ← MAX_ITERATIONS, MAX_QUERY_HOURS, etc.
+│   ├── loop.py                    ← investigate(alert_name) → Verdict
+│   └── KNOWN_ISSUES.md
+│
+├── docs/                          ← DOCUMENTATION
+│   ├── VISION.md                  ← the long-term end-state vision
+│   ├── BUILD-PLAN.md              ← the five-axis phased roadmap (current plan)
+│   ├── V1.1-ENGINE-STATUS.md      ← V1.1 status snapshot (superseded by BUILD-PLAN)
+│   └── architecture/              ← per-phase design write-ups
+│       ├── README.md              ← architecture index (7-layer target)
+│       └── 01-governed-core.md    ← P0 write-up
+│
+├── tests/                         ← unit tests + (growing) scenario harness
+│
+├── playbooks/                     ← V1.1 LEGACY — detection playbooks (Domains 1–2)
+│                                     the proven logic blip_core builds on
+├── blip_ai.py                     ← V1.1 legacy engine (orchestrator)
+├── investigation_engine.py        ← V1.1 legacy engine
+├── claude_analyst.py              ← V1.1 legacy engine (one-shot analyst)
+├── splunk_connector.py            ← Splunk access (shared with blip_core)
+│
+├── requirements.txt               ← runtime dependencies
+├── requirements-dev.txt           ← test dependencies
+├── conftest.py                    ← pytest config
+└── .gitignore
 ```
 
 ## Design Principles
